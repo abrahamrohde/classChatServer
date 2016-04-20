@@ -6,6 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 
+
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+#define SHMSZ     27
+
 void broadcast(char* msg, int* clients, int numClients);
 
 int main(int argc, char** argv)
@@ -35,11 +41,55 @@ int main(int argc, char** argv)
     {
         puts("Problem with binding...\n");
     }
+    
+    
+    char c;
+    int shmid;
+    key_t key;
+    int *shm;
+
+    /*
+     * We'll name our shared memory segment
+     * "5678".
+     */
+    key = 9578;
+
+    /*
+     * Create the segment.
+     */
+    if ((shmid = shmget(key, SHMSZ, IPC_CREAT | 0666)) < 0) {
+        perror("shmget");
+        exit(1);
+    }
+
+    /*
+     * Now we attach the segment to our data space.
+     */
+    if ((shm = shmat(shmid, NULL, 0)) == (int *) -1) {
+        perror("shmat");
+        exit(1);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     int listenfd;
     int clientfd;
     int MAX_CLIENTS = 1000;
     int* clients = malloc(MAX_CLIENTS * sizeof(int));
-    int numberOfConnectedClients = 0;
+    //int numberOfConnectedClients = &shm[0];
+    //puts(shm[0]);
+    printf("BEFORE: %i\n", shm[0]);
+    shm[0] = 0;
+    printf("AFTER: %i\n", shm[0]);
     int pid;
     int error;
     
@@ -53,7 +103,7 @@ int main(int argc, char** argv)
         printf("Client Connected.... %d\n", clientfd);
         
         //add this client to our array of clients
-        clients[numberOfConnectedClients++] = clientfd;
+        clients[shm[0]++] = clientfd;
         
         //send(clientfd, message , strlen(message) , 0);
         printf("About to fork\n");
@@ -61,10 +111,14 @@ int main(int argc, char** argv)
         if(pid == 0)
         {
             printf("Child\n");
+            printf("CHILD: %i\n", shm[0]);
+            shm[0] = shm[0]++;
         }
         else
         {
             printf("Parent\n");
+            printf("PARENT: %i\n", shm[0]);
+            shm[0] = shm[0]++;
             while(1)
             {
                 char* client_reply = malloc(2000 * sizeof(char));
@@ -79,7 +133,7 @@ int main(int argc, char** argv)
                 {
                     puts("Reply received\n");
                     puts(client_reply);
-                    broadcast(client_reply, clients, numberOfConnectedClients);
+                    broadcast(client_reply, clients, shm[0]);
                 }
             }
         }

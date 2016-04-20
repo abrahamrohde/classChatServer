@@ -47,9 +47,18 @@ int main(int argc, char** argv)
         }
         else
         {
-            char message[1000];
-            scanf("%s", message);
-            send(sockfd, message , strlen(message) , 0);
+            while(1)
+            {
+                char message[1000];
+                scanf("%s", message);
+                if(message == "DONE")
+                {
+                    free(server);
+                    return 0; 
+                }
+                send(sockfd, message , strlen(message) , 0);
+            }
+            
         }
         
         
