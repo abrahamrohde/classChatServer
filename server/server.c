@@ -85,13 +85,15 @@ int main(int argc, char** argv)
     int clientfd;
     int MAX_CLIENTS = 1000;
     int* clients = malloc(MAX_CLIENTS * sizeof(int));
-    //int numberOfConnectedClients = &shm[0];
+    int numberOfConnectedClients = 0;
     //puts(shm[0]);
     printf("BEFORE: %i\n", shm[0]);
     shm[0] = 0;
     printf("AFTER: %i\n", shm[0]);
     int pid;
     int error;
+    sem_t block;
+    sem_init(&block, 0, 1);
     
     char* message = "Hello";
     while(1)
@@ -103,7 +105,9 @@ int main(int argc, char** argv)
         printf("Client Connected.... %d\n", clientfd);
         
         //add this client to our array of clients
+        sem_wait(&block);
         clients[shm[0]++] = clientfd;
+        sem_post(&block);
         
         //send(clientfd, message , strlen(message) , 0);
         printf("About to fork\n");
@@ -111,14 +115,11 @@ int main(int argc, char** argv)
         if(pid == 0)
         {
             printf("Child\n");
-            printf("CHILD: %i\n", shm[0]);
-            shm[0] = shm[0]++;
         }
         else
         {
             printf("Parent\n");
-            printf("PARENT: %i\n", shm[0]);
-            shm[0] = shm[0]++;
+            
             while(1)
             {
                 char* client_reply = malloc(2000 * sizeof(char));
